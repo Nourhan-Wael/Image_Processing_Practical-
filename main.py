@@ -51,7 +51,45 @@ def gaussian_low_pass_filter_color(img, cutoff=50):
     img_yuv[:, :, 0] = filtered_y_channel.astype(np.uint8)
     return cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
 
+# ---- Edge Detection Algorithms ----
+
+# Sobel Operator
+def sobel_operator(img):
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    sobelx = cv2.Sobel(gray_img, cv2.CV_64F, 1, 0, ksize=3)
+    sobely = cv2.Sobel(gray_img, cv2.CV_64F, 0, 1, ksize=3)
+    sobel = cv2.magnitude(sobelx, sobely)
+    sobel = cv2.normalize(sobel, None, 0, 255, cv2.NORM_MINMAX)
+    return cv2.cvtColor(sobel.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+
+# Canny Edge Detector
+def canny_edge_detector(img):
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(gray_img, 100, 200)
+    return cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
+
+# Kirsch Operator
+def kirsch_operator(img):
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    kirsch_kernels = [
+        np.array([[5, 5, 5], [-3, 0, -3], [-3, -3, -3]]),
+        np.array([[-3, 5, 5], [-3, 0, 5], [-3, -3, -3]]),
+        np.array([[-3, -3, 5], [-3, 0, 5], [-3, -3, 5]]),
+        np.array([[-3, -3, -3], [-3, 0, 5], [-3, 5, 5]]),
+        np.array([[-3, -3, -3], [-3, 0, -3], [5, 5, 5]]),
+        np.array([[-3, -3, -3], [5, 0, -3], [5, 5, -3]]),
+        np.array([[5, -3, -3], [5, 0, -3], [5, -3, -3]]),
+        np.array([[5, 5, -3], [5, 0, -3], [-3, -3, -3]]),
+    ]
+    edge_images = [cv2.filter2D(gray_img, -1, k) for k in kirsch_kernels]
+    kirsch = np.max(edge_images, axis=0)
+    return cv2.cvtColor(kirsch.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+
 # ---- Additional Algorithms ----
+
+# Median Filter
+def median_filter(img):
+    return cv2.medianBlur(img, 5)
 
 # Laplacian Filter
 def laplacian_filter(img):
@@ -93,7 +131,11 @@ class ImageProcessingApp:
         self.algorithms = {
             "Ideal Low-Pass Filter (Color)": self.apply_ideal_low_pass_filter_color,
             "Gaussian Low-Pass Filter (Color)": self.apply_gaussian_low_pass_filter_color,
+            "Sobel Operator": self.apply_sobel_operator,
+            "Canny Edge Detector": self.apply_canny_edge_detector,
+            "Kirsch Operator": self.apply_kirsch_operator,
             "Laplacian Filter": self.apply_laplacian_filter,
+            "Median Filter": self.apply_median_filter,
             "Histogram Stretch (Grayscale)": self.apply_histogram_stretch_gray,
             "Histogram Stretch (RGB)": self.apply_histogram_stretch_rgb,
         }
@@ -168,8 +210,20 @@ class ImageProcessingApp:
     def apply_gaussian_low_pass_filter_color(self):
         self.processed_img = gaussian_low_pass_filter_color(self.img)
 
+    def apply_sobel_operator(self):
+        self.processed_img = sobel_operator(self.img)
+
+    def apply_canny_edge_detector(self):
+        self.processed_img = canny_edge_detector(self.img)
+
+    def apply_kirsch_operator(self):
+        self.processed_img = kirsch_operator(self.img)
+
     def apply_laplacian_filter(self):
         self.processed_img = laplacian_filter(self.img)
+
+    def apply_median_filter(self):
+        self.processed_img = median_filter(self.img)
 
     def apply_histogram_stretch_gray(self):
         gray_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
