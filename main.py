@@ -5,7 +5,36 @@ from tkinter import Tk, filedialog, Button, Label, ttk, Canvas, Toplevel
 from PIL import Image, ImageTk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+root = Tk()
+root.configure(background="white")
 # ---- Low-Pass Filter Algorithms ----
+
+header = Label(root, text="Image Enhancement Program", font=("Arial", 24, "bold"), fg="#037AB7")
+header.pack(ipadx=20,ipady=20)
+
+
+logo_path_left = "Image_Processing_Practical--main/magic-wand.png"  # Replace with your left logo path
+left_logo_image = Image.open(logo_path_left)
+left_logo_image = left_logo_image.resize((100, 100), Image.Resampling.LANCZOS)
+left_logo_photo = ImageTk.PhotoImage(left_logo_image)
+
+# Add the first logo to the top-left corner
+left_logo_label = Label(root, image=left_logo_photo,bg="white" )
+left_logo_label.place(x=20, y=20)  # Adjust as needed
+
+# Load the second logo for the top-right corner
+logo_path_right = "Image_Processing_Practical--main\magic-wand - Copy.png"  # Replace with your right logo path
+right_logo_image = Image.open(logo_path_right)
+right_logo_image = right_logo_image.resize((100, 100), Image.Resampling.LANCZOS)
+right_logo_photo = ImageTk.PhotoImage(right_logo_image)
+
+# Add the second logo to the top-right corner
+right_logo_label = Label(root, image=right_logo_photo, bg="white")
+right_logo_label.place(x=1100, y=10)  # Adjust x for positioning at the top-right corner
+
+# Prevent garbage collection of images
+root.left_logo_photo = left_logo_photo
+root.right_logo_photo = right_logo_photo
 
 # Ideal Low-Pass Filter (Color)
 def ideal_low_pass_filter_color(img, radius=50):
@@ -153,17 +182,19 @@ class ImageProcessingApp:
         self.processed_canvas = Canvas(self.canvas_frame, width=600, height=400, bg="gray")
         self.processed_canvas.place(x=600, y=0)
 
-        self.upload_button = Button(root, text="Upload Image", command=self.upload_image, font=("Helvetica", 12))
+        # Updated upload button style
+        self.upload_button = Button(root, text="Upload Image", command=self.upload_image, font=("Helvetica", 13),
+                                    width=20, bg="#037AB7", fg="white")
         self.upload_button.pack(pady=5)
 
         self.algorithm_selector = ttk.Combobox(root, values=list(self.algorithms.keys()), state="readonly", font=("Helvetica", 12))
         self.algorithm_selector.set("Select Filter")
         self.algorithm_selector.pack(pady=5)
 
-        self.apply_button = Button(root, text="Apply Filter", command=self.apply_filter, font=("Helvetica", 12))
+        self.apply_button = Button(root, width=20, bg="#19B1FF", fg="white", text="Apply Filter", command=self.apply_filter, font=("Helvetica", 13))
         self.apply_button.pack(pady=10)
 
-        self.histogram_button = Button(root, text="Show Histograms", command=self.show_histograms, font=("Helvetica", 12))
+        self.histogram_button = Button(root,width=20, bg="#004C72", fg="white",text="Show Histograms", command=self.show_histograms, font=("Helvetica", 13))
         self.histogram_button.pack(pady=5)
 
     def upload_image(self):
@@ -247,50 +278,22 @@ class ImageProcessingApp:
             self.hist_canvas = Canvas(self.hist_window, width=900, height=500)
             self.hist_canvas.pack()
 
-        # Clear any previous plots
-        plt.close('all')
+        # Plot histograms for both original and processed images
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 
-        # Create the figure and subplots
-        fig, axs = plt.subplots(1, 2, figsize=(14, 6))
-        fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.1)
+        original_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        processed_gray = cv2.cvtColor(self.processed_img, cv2.COLOR_BGR2GRAY)
 
-        def is_grayscale(image):
-            """Check if the image is grayscale or color."""
-            return len(image.shape) < 3 or image.shape[2] == 1
+        axes[0].hist(original_gray.ravel(), bins=256, color='gray')
+        axes[0].set_title("Original Image Histogram")
 
-        # Plot histogram for the original image
-        if is_grayscale(self.img):  # Grayscale image
-            axs[0].hist(self.img.ravel(), bins=256, range=[0, 256], color='gray')
-            axs[0].set_title("Original Image Histogram")
-            axs[0].set_xlim([0, 255])
-        else:  # Color image
-            colors = ('r', 'g', 'b')
-            for i, color in enumerate(colors):
-                axs[0].hist(self.img[:, :, i].ravel(), bins=256, range=[0, 256], color=color, alpha=0.7, label=f'{color.upper()} channel')
-            axs[0].set_title("Original Image Histogram")
-            axs[0].set_xlim([0, 255])
-            axs[0].legend()
+        axes[1].hist(processed_gray.ravel(), bins=256, color='gray')
+        axes[1].set_title("Processed Image Histogram")
 
-        # Plot histogram for the processed image
-        if is_grayscale(self.processed_img):  # Grayscale image
-            axs[1].hist(self.processed_img.ravel(), bins=256, range=[0, 256], color='gray')
-            axs[1].set_title("Processed Image Histogram")
-            axs[1].set_xlim([0, 255])
-        else:  # Color image
-            for i, color in enumerate(colors):
-                axs[1].hist(self.processed_img[:, :, i].ravel(), bins=256, range=[0, 256], color=color, alpha=0.7, label=f'{color.upper()} channel')
-            axs[1].set_title("Processed Image Histogram")
-            axs[1].set_xlim([0, 255])
-            axs[1].legend()
-
-        # Embed the plot in the Tkinter window
+        # Display the histograms on the Tkinter canvas
         canvas = FigureCanvasTkAgg(fig, master=self.hist_canvas)
         canvas.draw()
         canvas.get_tk_widget().pack()
 
-
-
-
-root = Tk()
 app = ImageProcessingApp(root)
 root.mainloop()
