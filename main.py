@@ -1,16 +1,24 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt #مكتبة لإنشاء الرسوم البيانية مثل الهيستوغرام.
 from tkinter import Tk, filedialog, Button, Label, ttk, Canvas, Toplevel
-from PIL import Image, ImageTk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
+from PIL import Image, ImageTk #مكتبة Python Imaging Library لتحويل الصور بين الأنواع
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg #رلدمج رسومات Matplotlib داخل تطبيق Tkinter.
+ 
 root = Tk()
 root.configure(background="white")
 # ---- Low-Pass Filter Algorithms ----
 
 header = Label(root, text="Image Enhancement Program", font=("Arial", 24, "bold"), fg="#037AB7")
 header.pack(ipadx=20,ipady=20)
+
+
+bef = Label(root, text="before", font=("Arial", 16))
+bef.place(x=250, y=100)
+aft= Label(root, text="After", font=("Arial", 16))
+aft.place(x=900, y=100)
+
+ 
 
 
 logo_path_left = "Image_Processing_Practical--main/magic-wand.png"  # Replace with your left logo path
@@ -197,6 +205,8 @@ class ImageProcessingApp:
         self.histogram_button = Button(root,width=20, bg="#004C72", fg="white",text="Show Histograms", command=self.show_histograms, font=("Helvetica", 13))
         self.histogram_button.pack(pady=5)
 
+
+
     def upload_image(self):
         file_path = filedialog.askopenfilename(
             title="Select an Image",
@@ -294,6 +304,172 @@ class ImageProcessingApp:
         canvas = FigureCanvasTkAgg(fig, master=self.hist_canvas)
         canvas.draw()
         canvas.get_tk_widget().pack()
+
+# Add a button to clear the images
+class ImageProcessingApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Image Processing App")
+        self.root.geometry("1200x800")
+
+        # Variables
+        self.img = None
+        self.processed_img = None
+        self.algorithms = {
+            "Ideal Low-Pass Filter (Color)": self.apply_ideal_low_pass_filter_color,
+            "Gaussian Low-Pass Filter (Color)": self.apply_gaussian_low_pass_filter_color,
+            "Sobel Operator": self.apply_sobel_operator,
+            "Canny Edge Detector": self.apply_canny_edge_detector,
+            "Kirsch Operator": self.apply_kirsch_operator,
+            "Laplacian Filter": self.apply_laplacian_filter,
+            "Median Filter": self.apply_median_filter,
+            "Histogram Stretch (Grayscale)": self.apply_histogram_stretch_gray,
+            "Histogram Stretch (RGB)": self.apply_histogram_stretch_rgb,
+        }
+
+        # Widgets
+        self.label = Label(root, text="Choose an image and apply a filter!", font=("Helvetica", 14))
+        self.label.pack(pady=10)
+
+        self.canvas_frame = Canvas(root, width=1200, height=400, bg="white")
+        self.canvas_frame.pack()
+
+        self.original_canvas = Canvas(self.canvas_frame, width=600, height=400, bg="gray")
+        self.original_canvas.place(x=0, y=0)
+
+        self.processed_canvas = Canvas(self.canvas_frame, width=600, height=400, bg="gray")
+        self.processed_canvas.place(x=600, y=0)
+
+        # Updated upload button style
+        self.upload_button = Button(root, text="Upload Image", command=self.upload_image, font=("Helvetica", 13),
+                                    width=20, bg="#037AB7", fg="white")
+        self.upload_button.pack(pady=5)
+
+        self.algorithm_selector = ttk.Combobox(root, values=list(self.algorithms.keys()), state="readonly", font=("Helvetica", 12))
+        self.algorithm_selector.set("Select Filter")
+        self.algorithm_selector.pack(pady=5)
+
+        self.apply_button = Button(root, width=20, bg="#19B1FF", fg="white", text="Apply Filter", command=self.apply_filter, font=("Helvetica", 13))
+        self.apply_button.pack(pady=10)
+
+        self.histogram_button = Button(root, width=20, bg="#004C72", fg="white", text="Show Histograms", command=self.show_histograms, font=("Helvetica", 13))
+        self.histogram_button.pack(pady=5)
+
+        # Add Clear Image Button
+        self.clear_button = Button(root, text="Clear Images", command=self.clear_images, font=("Helvetica", 13),
+                                    width=20, bg="#FF5733", fg="white")
+        self.clear_button.pack(pady=5)
+
+    def clear_images(self):
+        """Clears the original and processed images from the canvases."""
+        self.original_canvas.delete("all")
+        self.processed_canvas.delete("all")
+        self.img = None
+        self.processed_img = None
+        self.label.config(text="Choose an image and apply a filter!", fg="black")
+
+    def upload_image(self):
+        file_path = filedialog.askopenfilename(
+            title="Select an Image",
+            filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.gif")]
+        )
+        if file_path:
+            self.img = cv2.imread(file_path)
+            self.display_original_image(self.img)
+
+    def display_original_image(self, img):
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img_pil = Image.fromarray(img_rgb)
+        img_tk = ImageTk.PhotoImage(img_pil.resize((600, 400)))
+        self.original_canvas.create_image(0, 0, anchor="nw", image=img_tk)
+        self.original_canvas.image = img_tk
+
+    def display_processed_image(self, img):
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img_pil = Image.fromarray(img_rgb)
+        img_tk = ImageTk.PhotoImage(img_pil.resize((600, 400)))
+        self.processed_canvas.create_image(0, 0, anchor="nw", image=img_tk)
+        self.processed_canvas.image = img_tk
+
+    def apply_filter(self):
+        if self.img is None:
+            self.label.config(text="Please upload an image first!", fg="red")
+            return
+
+        filter_name = self.algorithm_selector.get()
+        if filter_name not in self.algorithms:
+            self.label.config(text="Please select a valid filter!", fg="red")
+            return
+
+        self.label.config(text="Processing...", fg="black")
+        self.algorithms[filter_name]()
+        self.display_processed_image(self.processed_img)
+        self.label.config(text=f"Applied: {filter_name}", fg="green")
+
+    def apply_ideal_low_pass_filter_color(self):
+        self.processed_img = ideal_low_pass_filter_color(self.img)
+
+    def apply_gaussian_low_pass_filter_color(self):
+        self.processed_img = gaussian_low_pass_filter_color(self.img)
+
+    def apply_sobel_operator(self):
+        self.processed_img = sobel_operator(self.img)
+
+    def apply_canny_edge_detector(self):
+        self.processed_img = canny_edge_detector(self.img)
+
+    def apply_kirsch_operator(self):
+        self.processed_img = kirsch_operator(self.img)
+
+    def apply_laplacian_filter(self):
+        self.processed_img = laplacian_filter(self.img)
+
+    def apply_median_filter(self):
+        self.processed_img = median_filter(self.img)
+
+    def apply_histogram_stretch_gray(self):
+        gray_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        self.processed_img = cv2.cvtColor(histogram_stretch_gray(gray_img), cv2.COLOR_GRAY2BGR)
+
+    def apply_histogram_stretch_rgb(self):
+        self.processed_img = histogram_stretch_rgb(self.img.copy())
+
+    def show_histograms(self):
+        if self.img is None or self.processed_img is None:
+            self.label.config(text="Please upload an image and apply an algorithm first!", fg="red")
+            return
+
+        # Create a new window for histograms if it doesn't exist
+        if not hasattr(self, 'hist_window') or not self.hist_window.winfo_exists():
+            self.hist_window = Toplevel(self.root)
+            self.hist_window.title("Histograms")
+            self.hist_window.geometry("1000x600")
+
+            # Create a canvas for embedding the matplotlib plot
+            self.hist_canvas = Canvas(self.hist_window, width=900, height=500)
+            self.hist_canvas.pack()
+
+        # Plot histograms for both original and processed images
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+        original_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        processed_gray = cv2.cvtColor(self.processed_img, cv2.COLOR_BGR2GRAY)
+
+        axes[0].hist(original_gray.ravel(), bins=256, color='gray')
+        axes[0].set_title("Original Image Histogram")
+
+        axes[1].hist(processed_gray.ravel(), bins=256, color='gray')
+        axes[1].set_title("Processed Image Histogram")
+
+        # Display the histograms on the Tkinter canvas
+        canvas = FigureCanvasTkAgg(fig, master=self.hist_canvas)
+        canvas.draw()
+        canvas.get_tk_widget().pack()
+
+
+
+
+
 
 app = ImageProcessingApp(root)
 root.mainloop()
